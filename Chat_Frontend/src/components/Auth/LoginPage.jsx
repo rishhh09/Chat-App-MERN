@@ -1,6 +1,6 @@
 import axios, { Axios } from 'axios';
 import { useState } from 'react';
-const BASE_URL = 'http://localhost:5001/api/user'
+const BASE_URL = `${import.meta.env.VITE_API_URL}/api/user`
 
 axios.defaults.withCredentials = true
 

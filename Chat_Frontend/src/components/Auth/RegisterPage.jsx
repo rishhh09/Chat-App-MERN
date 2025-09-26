@@ -2,7 +2,7 @@ import {useState} from 'react'
 import axios from 'axios'
 
 axios.defaults.withCredentials = true
-const BASE_URL = 'http://localhost:5001/api/user'
+const BASE_URL = `${import.meta.env.VITE_API_URL}/api/user`
 
 const RegisterPage = ({ onSwitchToLogin }) => {
   const [email, setEmail] = useState("")

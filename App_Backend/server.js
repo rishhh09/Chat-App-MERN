@@ -9,6 +9,7 @@ import cors from 'cors'
 import { Server } from 'socket.io'
 import { createServer } from 'http'
 import cookieParser from 'cookie-parser'
+const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
 
 dotenv.config()
 const port = process.env.PORT || 5000
@@ -16,7 +17,7 @@ const port = process.env.PORT || 5000
 connectDB()
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigin,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }))
@@ -31,7 +32,7 @@ const server = createServer(app)
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: allowedOrigin,
         methods: ["GET", "POST"],
         credentials: true
     }

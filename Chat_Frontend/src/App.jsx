@@ -8,7 +8,8 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true
 
-const BASE_URL = 'http://localhost:5001/api/user'
+const BASE_URL = `${import.meta.env.VITE_API_URL}/api/user`
+const SOCKET_URL = import.meta.env.VITE_API_URL;
 
 function App() {
   const [isLoginPage, setIsLoginPage] = useState(true)
@@ -20,7 +21,7 @@ function App() {
   const socketRef = useRef(null)
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:5001", { autoConnect: false, withCredentials: true })
+    socketRef.current = io(SOCKET_URL, { autoConnect: false, withCredentials: true })
     return () => {
       socketRef.current?.disconnect()
     }
@@ -104,7 +105,7 @@ function App() {
       setIsLogoutSuccess(true)
       setIsLoginPage(true)
       socketRef.current?.disconnect()
-      socketRef.current = io("http://localhost:5001", { autoConnect: false, withCredentials: true })
+      socketRef.current = io(SOCKET_URL, { autoConnect: false, withCredentials: true })
       console.log('App: socket recreated on logout')
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Logout Failed, can't logout user"
