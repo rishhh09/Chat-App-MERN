@@ -16,7 +16,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     const fetchUsers = async () => {
       try {
         const response = await axios.get("http://localhost:5001/api/user/all");
-        setConversations(response.data.users); 
+        setConversations(response.data.users);
       } catch (err) {
         console.error("Failed to fetch users", err);
       }
@@ -26,7 +26,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
 
   // ✅ Step 2: Fetch messages when a chat is selected
   useEffect(() => {
-     if (!selectedChat) {
+    if (!selectedChat) {
       setMessages([]); // clear when no chat selected
       return;
     }
@@ -48,7 +48,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
   useEffect(() => {
     if (!socket) return;
 
-     const handler = (newMessage) => {
+    const handler = (newMessage) => {
       const senderId = newMessage?.sender?._id ?? newMessage?.sender ?? newMessage?.senderId;
       const receiverId = newMessage?.receiver?._id ?? newMessage?.receiver ?? newMessage?.receiverId;
 
@@ -84,7 +84,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     };
 
     console.log('emit sendMessage payload', payload);
-    socket.emit("sendMessage", payload);
+    socket?.emit("sendMessage", payload);
 
     // optimistic local message shaped like server document
     const localMsg = {
@@ -99,11 +99,36 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     setMessage('');
   };
 
+  // replace simple handler with Shift+Enter support + preventDefault
   const handleKeyPress = (e) => {
-  if (e.key === "Enter") {
-    sendMessage(); // your send function
-  }
-};
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // unify join/reconnect logic into one effect (remove the duplicate effects)
+  useEffect(() => {
+    if (!socket) return;
+
+    const emitJoin = () => {
+      if (currentUserId) {
+        socket.emit('join', currentUserId);
+      }
+    };
+
+    // emit once if connected now
+    if (socket.connected) emitJoin();
+
+    // emit on relevant socket events
+    socket.on('connect', emitJoin);
+    socket.on('reconnect', emitJoin);
+
+    return () => {
+      socket.off('connect', emitJoin);
+      socket.off('reconnect', emitJoin);
+    };
+  }, [socket, currentUserId]);
 
   // ✅ Mobile handlers
   const handleChatSelect = (chatId) => {
@@ -121,7 +146,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     <div className="flex h-screen bg-gray-900 text-white overflow-hidden">
       {/* Sidebar */}
       <div className={`${isMobileView ? 'hidden' : 'block'} md:block w-full md:w-80 lg:w-96 xl:w-80`}>
-        <Sidebar 
+        <Sidebar
           conversations={conversations}
           selectedChat={selectedChat}
           setSelectedChat={handleChatSelect}
@@ -139,7 +164,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
             message={message}
             setMessage={setMessage}
             handleSendMessage={handleSendMessage}
-            onKeyDown={handleKeyPress}
+            handleKeyPress={handleKeyPress}   // <- fixed prop name
             onBackToSidebar={handleBackToSidebar}
             isMobile={isMobileView}
             currentUserId={currentUserId}

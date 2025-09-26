@@ -1,27 +1,37 @@
 import axios, { Axios } from 'axios';
-import {useState} from 'react';
+import { useState } from 'react';
 const BASE_URL = 'http://localhost:5001/api/user'
 
 axios.defaults.withCredentials = true
 
-const LoginPage = ({ onSwitchToRegister , onLoginSuccess, onLogoutSuccess}) => {
+const LoginPage = ({ onSwitchToRegister, onLoginSuccess, onLogoutSuccess }) => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isSuccess, setIsSuccess] = useState(false)
   const [message, setMessage] = useState("")
 
-  const handleLogin = async(e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     setIsSuccess(false)
     setMessage("")
 
-    try{
-      const response = await axios.post(`${BASE_URL}/login`, {email, password})
+    try {
+      // ensure cookie is set by using withCredentials
+      const res = await axios.post(`${BASE_URL}/login`, { email, password }, { withCredentials: true });
+
+      // debug: log full response to verify server returns user id
+      console.log('Login response:', res);
+
+      // server may return userId or user object
+      const userId = res.data?.userId ?? res.data?._id ?? res.data?.user?._id;
+
+      // call parent callback so App knows user is logged in
+      onLoginSuccess()
+
       setMessage("Login Successful. Redirecting to HOME")
       setIsSuccess(true)
-      onLoginSuccess()
       onLogoutSuccess()
-    }catch(error){
+    } catch (error) {
       const errorMessage = error.response?.data?.message || "Login failed. Please try again."
       setMessage(errorMessage)
       setIsSuccess(false)
@@ -32,8 +42,8 @@ const LoginPage = ({ onSwitchToRegister , onLoginSuccess, onLogoutSuccess}) => {
     <div className="flex justify-center items-center h-screen bg-[#1a1a1a] text-gray-100 font-sans p-5">
       <div className="bg-[#2c2c2c] rounded-xl shadow-xl p-10 max-w-sm w-full text-center border border-[#8a2be2]/30">
         <h2 className="text-[rgb(138,43,226)] text-3xl font-bold mb-8">Login</h2>
-        {message && 
-          <div className={`p-4 rounded-md mb-4 text-center font-bold ${isSuccess?'bg-green-600 text-white': 'bg-red-600 text-white'}`}>{message}</div>
+        {message &&
+          <div className={`p-4 rounded-md mb-4 text-center font-bold ${isSuccess ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>{message}</div>
         }
         <form onSubmit={handleLogin}>
           <div className="mb-5 text-left">
