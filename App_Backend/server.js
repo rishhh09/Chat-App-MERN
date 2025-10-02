@@ -9,9 +9,10 @@ import cors from 'cors'
 import { Server } from 'socket.io'
 import { createServer } from 'http'
 import cookieParser from 'cookie-parser'
+dotenv.config()
+
 const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
 
-dotenv.config()
 const port = process.env.PORT || 5000
 
 connectDB()
