@@ -11,7 +11,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileView, setIsMobileView] = useState(false);
 
-  // ✅ Step 1: Fetch all users (conversations)
+  // Step 1: Fetch all users (conversations)
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -24,7 +24,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     fetchUsers();
   }, []);
 
-  // ✅ Step 2: Fetch messages when a chat is selected
+  //Step 2: Fetch messages when a chat is selected
   useEffect(() => {
     if (!selectedChat) {
       setMessages([]); // clear when no chat selected
@@ -44,7 +44,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     fetchMessages();
   }, [selectedChat]);
 
-  // ✅ Step 3: Listen for incoming messages
+  // Step 3: Listen for incoming messages
   useEffect(() => {
     if (!socket) return;
 
@@ -65,7 +65,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     };
   }, [selectedChat, socket]);
 
-  // ✅ Step 4: Send message (require sender + consistent local message shape)
+  // Step 4: Send message (require sender + consistent local message shape)
   const handleSendMessage = () => {
     if (!selectedChat) {
       console.warn('No chat selected, abort send');
@@ -130,7 +130,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     };
   }, [socket, currentUserId]);
 
-  // ✅ Mobile handlers
+  // Mobile handlers
   const handleChatSelect = (chatId) => {
     setSelectedChat(chatId);
     setIsMobileView(true);

@@ -58,7 +58,7 @@ export const loginUser = async (req, res) => {
             maxAge: 1 * 24 * 60 * 60 * 1000 
         })
 
-        return res.status(200).json({message: "Login Successfull",username: user.username })
+        return res.status(200).json({message: "Login Successfull",username: user.username , userId: user._id })
     } else {
         res.status(401)
         throw new Error("Email and Password are not valid")
