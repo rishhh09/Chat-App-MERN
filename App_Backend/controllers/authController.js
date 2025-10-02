@@ -54,27 +54,32 @@ export const loginUser = async (req, res) => {
         res.cookie('jwt', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production'? 'None': 'Lax',
-            maxAge: 1 * 24 * 60 * 60 * 1000 
+            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+            maxAge: 1 * 24 * 60 * 60 * 1000
         })
 
-        return res.status(200).json({message: "Login Successfull",username: user.username , userId: user._id })
+        return res.status(200).json(
+            {
+                message: "Login Successfull",
+                username: user.username,
+                userId: user._id
+            })
     } else {
         res.status(401)
         throw new Error("Email and Password are not valid")
     }
 }
 
-export const logoutUser = async(req, res) => {
-    try{
+export const logoutUser = async (req, res) => {
+    try {
         res.cookie('jwt', '', {
             httpOnly: true,
             expires: new Date(0)
         })
 
-        res.status(200).json({message: "User logout successfully..."})      
-    }catch(error){
-        res.status(500).json({message: error.message})
+        res.status(200).json({ message: "User logout successfully..." })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
     }
 }
 
@@ -104,10 +109,10 @@ export const userInfo = async (req, res) => {
 }
 
 export const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find({}, "_id username email"); 
-    res.status(200).json({ users });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch users" });
-  }
+    try {
+        const users = await User.find({}, "_id username email");
+        res.status(200).json({ users });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch users" });
+    }
 };

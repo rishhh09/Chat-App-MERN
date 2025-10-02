@@ -11,7 +11,7 @@ router.get("/all", getAllUsers);
 router.get('/checkAuth', validateToken, (req, res) => {
     res.status(200).json({
         message: "Authenticated",
-        userId: req.user.id
+        userId: req.user._id
     })
 })
 
