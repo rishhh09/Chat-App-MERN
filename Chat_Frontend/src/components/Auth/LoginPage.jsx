@@ -26,7 +26,7 @@ const LoginPage = ({ onSwitchToRegister, onLoginSuccess, onLogoutSuccess }) => {
       const userId = res.data?.userId ?? res.data?._id ?? res.data?.user?._id;
 
       // call parent callback so App knows user is logged in
-      props.onLoginSuccess?.(userId)
+      onLoginSuccess(userId)
 
       setMessage("Login Successful. Redirecting to HOME")
       setIsSuccess(true)
