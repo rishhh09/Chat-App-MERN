@@ -37,8 +37,16 @@ const io = new Server(server, {
         origin: allowedOrigin,
         methods: ["GET", "POST"],
         credentials: true
+    },
+    
+    allowRequest: (req, callback) => {
+        console.log("Socket.IO handshake origin:", req.headers.origin);
+
+        // Manually approving the request. 
+        const isOriginAllowed = true; 
+        callback(null, isOriginAllowed);
     }
-})
+});
 
 io.on("connection", (socket) => {
     console.log("New user connected : ", socket.id)
