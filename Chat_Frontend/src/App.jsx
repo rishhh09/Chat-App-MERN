@@ -8,8 +8,8 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true
 
-const BASE_URL = `${import.meta.env.VITE_API_URL}/api/user`
-const SOCKET_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = '/api/user'
+const SOCKET_URL = '/';
 
 function App() {
   const [isLoginPage, setIsLoginPage] = useState(true)
