@@ -32,6 +32,7 @@ app.use('/api/messages', messageRoutes)
 const server = createServer(app)
 
 const io = new Server(server, {
+    pingTimeout: 60000,
     cors: {
         origin: allowedOrigin,
         methods: ["GET", "POST"],
