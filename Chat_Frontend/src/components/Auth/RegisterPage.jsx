@@ -20,7 +20,7 @@ const RegisterPage = ({ onSwitchToLogin }) => {
       return
     }
     try{
-      const response = await API.post('api/user/register', {email, username, password})
+      const response = await API.post('/api/user/register', {email, username, password})
       setIsSuccess(true)
       setMessage("Registration successful! Redirecting to login...");
 

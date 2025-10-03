@@ -8,6 +8,14 @@ import API from './api.js'
 
 const SOCKET_URL = '/';
 
+// ✅ Define socket options in a constant to ensure consistency
+const socketOptions = {
+  autoConnect: false,
+  withCredentials: true,
+  transports: ['websocket'],
+  upgrade: false
+};
+
 function App() {
   const [isLoginPage, setIsLoginPage] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -18,12 +26,8 @@ function App() {
   const socketRef = useRef(null)
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL, {
-      autoConnect: false,
-      withCredentials: true, 
-      transports: ['websocket'], 
-      upgrade: false
-    })
+    // ✅ Use the consistent socket options
+    socketRef.current = io(SOCKET_URL, socketOptions);
     return () => {
       socketRef.current?.disconnect()
     }
@@ -33,7 +37,8 @@ function App() {
     const checkUserAuthentication = async () => {
       try {
         console.log('App: running checkAuth');
-        const response = await API.get('api/user/checkAuth')
+        // ✅ Add leading slash for absolute path
+        const response = await API.get('/api/user/checkAuth');
         if (response.status === 200) {
           const userId = response.data.userId
           console.log('App: checkAuth userId', userId)
@@ -60,11 +65,11 @@ function App() {
   const handleLoginSuccess = async (userId) => {
     console.log('App: handleLoginSuccess userId', userId);
 
-    // if LoginPage didn't provide userId, fetch it from checkAuth
     let resolvedUserId = userId;
     if (!resolvedUserId) {
       try {
-        const resp = await API.get('api/user/checkAuth');
+        // ✅ Add leading slash for absolute path
+        const resp = await API.get('/api/user/checkAuth');
         if (resp.status === 200) {
           resolvedUserId = resp.data?.userId ?? resp.data?._id ?? resp.data?.user?._id;
           console.log('App: recovered userId from checkAuth', resolvedUserId);
@@ -76,7 +81,7 @@ function App() {
 
     if (!resolvedUserId) {
       console.warn('App: no userId available after login — aborting socket join');
-      setIsLoggedIn(true); // still show UI if desired
+      setIsLoggedIn(true);
       return;
     }
 
@@ -85,7 +90,6 @@ function App() {
     setCurrentUserId(resolvedUserId);
 
     if (socketRef.current) {
-      // ensure fresh handshake so server-side sees current cookie/auth
       try {
         if (socketRef.current.connected) socketRef.current.disconnect();
       } catch (e) { }
@@ -101,13 +105,15 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await API.post('api/user/logout')
+      // ✅ Add leading slash for absolute path
+      await API.post('/api/user/logout');
       setIsLoggedIn(false)
       setCurrentUserId("")
       setIsLogoutSuccess(true)
       setIsLoginPage(true)
       socketRef.current?.disconnect()
-      socketRef.current = io(SOCKET_URL, { autoConnect: false, withCredentials: true })
+      // ✅ Use the consistent socket options when recreating
+      socketRef.current = io(SOCKET_URL, socketOptions);
       console.log('App: socket recreated on logout')
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Logout Failed, can't logout user"
@@ -135,4 +141,3 @@ function App() {
 }
 
 export default App
-

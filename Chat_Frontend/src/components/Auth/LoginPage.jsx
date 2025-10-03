@@ -14,7 +14,7 @@ const LoginPage = ({ onSwitchToRegister, onLoginSuccess, onLogoutSuccess }) => {
 
     try {
       // ensure cookie is set by using withCredentials
-      const res = await API.post('api/user/login', { email, password }, { withCredentials: true });
+      const res = await API.post('/api/user/login', { email, password }, { withCredentials: true });
 
       // debug: log full response to verify server returns user id
       console.log('Login response:', res);
