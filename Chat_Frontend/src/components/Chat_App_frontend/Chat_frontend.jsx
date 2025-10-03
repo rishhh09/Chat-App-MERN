@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import ChatArea from './ChatArea';
-import axios from 'axios';
+import API from '../../api';
 
 const Chat_frontend = ({ socket, currentUserId }) => {
   const [conversations, setConversations] = useState([]);
@@ -15,7 +15,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/user/all`);
+        const response = await API.get('/api/user/all');
         setConversations(response.data.users);
       } catch (err) {
         console.error("Failed to fetch users", err);
@@ -33,7 +33,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
 
     const fetchMessages = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/messages/${selectedChat}`);
+        const response = await API.get(`/api/messages/${selectedChat}`);
         const data = Array.isArray(response.data) ? response.data : (response.data.message ?? response.data)
         setMessages(data);
       } catch (err) {

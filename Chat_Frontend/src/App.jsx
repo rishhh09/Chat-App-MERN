@@ -4,11 +4,8 @@ import { io } from 'socket.io-client'
 import LoginPage from './components/Auth/LoginPage'
 import RegisterPage from './components/Auth/RegisterPage'
 import Chat_frontend from './components/Chat_App_frontend/Chat_frontend'
-import axios from 'axios'
+import API from './api.js'
 
-axios.defaults.withCredentials = true
-
-const BASE_URL = '/api/user'
 const SOCKET_URL = '/';
 
 function App() {
@@ -31,7 +28,7 @@ function App() {
     const checkUserAuthentication = async () => {
       try {
         console.log('App: running checkAuth');
-        const response = await axios.get(`${BASE_URL}/checkAuth`)
+        const response = await API.get('api/user/checkAuth')
         if (response.status === 200) {
           const userId = response.data.userId
           console.log('App: checkAuth userId', userId)
@@ -62,7 +59,7 @@ function App() {
     let resolvedUserId = userId;
     if (!resolvedUserId) {
       try {
-        const resp = await axios.get(`${BASE_URL}/checkAuth`);
+        const resp = await API.get('api/user/checkAuth');
         if (resp.status === 200) {
           resolvedUserId = resp.data?.userId ?? resp.data?._id ?? resp.data?.user?._id;
           console.log('App: recovered userId from checkAuth', resolvedUserId);
@@ -99,7 +96,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${BASE_URL}/logout`)
+      await API.post('api/user/logout')
       setIsLoggedIn(false)
       setCurrentUserId("")
       setIsLogoutSuccess(true)

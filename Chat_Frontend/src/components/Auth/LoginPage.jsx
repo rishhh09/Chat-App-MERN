@@ -1,8 +1,5 @@
-import axios, { Axios } from 'axios';
 import { useState } from 'react';
-const BASE_URL = `${import.meta.env.VITE_API_URL}/api/user`
-
-axios.defaults.withCredentials = true
+import API from '../../api';
 
 const LoginPage = ({ onSwitchToRegister, onLoginSuccess, onLogoutSuccess }) => {
   const [email, setEmail] = useState("")
@@ -17,7 +14,7 @@ const LoginPage = ({ onSwitchToRegister, onLoginSuccess, onLogoutSuccess }) => {
 
     try {
       // ensure cookie is set by using withCredentials
-      const res = await axios.post(`${BASE_URL}/login`, { email, password }, { withCredentials: true });
+      const res = await API.post('api/user/login', { email, password }, { withCredentials: true });
 
       // debug: log full response to verify server returns user id
       console.log('Login response:', res);

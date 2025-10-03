@@ -1,8 +1,5 @@
 import {useState} from 'react'
-import axios from 'axios'
-
-axios.defaults.withCredentials = true
-const BASE_URL = `${import.meta.env.VITE_API_URL}/api/user`
+import API from '../../api';
 
 const RegisterPage = ({ onSwitchToLogin }) => {
   const [email, setEmail] = useState("")
@@ -23,7 +20,7 @@ const RegisterPage = ({ onSwitchToLogin }) => {
       return
     }
     try{
-      const response = await axios.post(`${BASE_URL}/register`, {email, username, password})
+      const response = await API.post('api/user/register', {email, username, password})
       setIsSuccess(true)
       setMessage("Registration successful! Redirecting to login...");
 
