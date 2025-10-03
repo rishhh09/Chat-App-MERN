@@ -18,7 +18,11 @@ function App() {
   const socketRef = useRef(null)
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL, { autoConnect: false, withCredentials: true })
+    socketRef.current = io(SOCKET_URL, {
+      autoConnect: false,
+      withCredentials: true, 
+      transports: ['websocket']
+    })
     return () => {
       socketRef.current?.disconnect()
     }
