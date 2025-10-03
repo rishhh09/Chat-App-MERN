@@ -21,7 +21,8 @@ function App() {
     socketRef.current = io(SOCKET_URL, {
       autoConnect: false,
       withCredentials: true, 
-      transports: ['websocket']
+      transports: ['websocket'], 
+      upgrade: false
     })
     return () => {
       socketRef.current?.disconnect()
