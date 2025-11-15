@@ -4,15 +4,15 @@ import bcrypt from 'bcrypt'
 import dotenv from 'dotenv'
 dotenv.config()
 
-// CHECK IF IN PRODUCTION (Render)
+// Detect production correctly
 const isProd = process.env.NODE_ENV === "production";
 
-// COOKIE SETTINGS
+// COOKIE SETTINGS for RENDER deployment
 const cookieOptions = {
     httpOnly: true,
-    secure: isProd,            // 🔥 cookie only over HTTPS in production
-    sameSite: isProd ? "none" : "lax", // 🔥 REQUIRED for Render cross-domain cookies
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    secure: isProd,                   // HTTPS only in production
+    sameSite: isProd ? "none" : "lax", // Cross-site cookie fix
+    maxAge: 24 * 60 * 60 * 1000,      // 1 day
 };
 
 export const registerUser = async (req, res) => {
@@ -57,7 +57,7 @@ export const loginUser = async (req, res) => {
         const payload = { user: { id: user._id.toString(), email: user.email } };
         const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '8h' });
 
-        // 🔥 FIXED COOKIE for Render
+        // Set cookie with correct cross-site values
         res.cookie("jwt", token, cookieOptions);
 
         return res.status(200).json({
@@ -72,10 +72,10 @@ export const loginUser = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
     try {
-        // 🔥 must clear cookie with same options
+        // Clear cookie properly
         res.cookie("jwt", "", {
             ...cookieOptions,
-            expires: new Date(0)
+            expires: new Date(0),
         });
 
         return res.status(200).json({ message: "User logged out successfully." });
