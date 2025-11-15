@@ -6,14 +6,13 @@ import RegisterPage from './components/Auth/RegisterPage'
 import Chat_frontend from './components/Chat_App_frontend/Chat_frontend'
 import API from './api.js'
 
-const SOCKET_URL = '/';
+const SOCKET_URL = import.meta.env.VITE_BACKEND_URL;
 
-// ✅ Define socket options in a constant to ensure consistency
+// Define socket options in a constant to ensure consistency
 const socketOptions = {
   autoConnect: false,
   withCredentials: true,
-  transports: ['websocket'],
-  upgrade: false
+  transports: ["websocket"], 
 };
 
 function App() {
