@@ -9,85 +9,85 @@ import cors from 'cors'
 import { Server } from 'socket.io'
 import { createServer } from 'http'
 import cookieParser from 'cookie-parser'
+
 dotenv.config()
 
-const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+// SUPPORT MULTIPLE ORIGINS
+const allowedOrigins = process.env.CLIENT_URL?.split(",") || [
+  "http://localhost:5173"
+];
 
 const port = process.env.PORT || 5000
 
 connectDB()
 
+// ✅ FIX CORS FOR COOKIES + RENDER
 app.use(cors({
-    origin: allowedOrigin,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
-}))
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 app.use(express.json())
 app.use(cookieParser())
 
+// ROUTES
 app.use('/api/user', authRoutes)
 app.use('/api/messages', messageRoutes)
 
 const server = createServer(app)
 
+// ✅ SOCKET.IO WITH SAME CORS FIX
 const io = new Server(server, {
-    pingTimeout: 60000,
-    cors: {
-        origin: allowedOrigin,
-        methods: ["GET", "POST"],
-        credentials: true
-    },
-    
-    allowRequest: (req, callback) => {
-        console.log("Socket.IO handshake origin:", req.headers.origin);
-
-        // Manually approving the request. 
-        const isOriginAllowed = true; 
-        callback(null, isOriginAllowed);
-    }
+  pingTimeout: 60000,
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST"]
+  },
+  allowRequest: (req, callback) => {
+    console.log("Socket.IO handshake origin:", req.headers.origin);
+    callback(null, true); // allow all for now
+  }
 });
 
+// SOCKET.IO EVENTS
 io.on("connection", (socket) => {
-    console.log("New user connected : ", socket.id)
+  console.log("New user connected:", socket.id);
 
-    socket.on("join", (userId) => {
-        socket.join(userId)
-        console.log(`${socket.id} joined room ${userId}`)
-    })
+  socket.on("join", (userId) => {
+    socket.join(userId);
+    console.log(`${socket.id} joined room ${userId}`);
+  });
 
-    socket.on('sendMessage', async (data) => {
-        // fallback: if client omitted sender, try socket auth info
-        data.sender = data.sender ?? socket.userId ?? socket.handshake?.auth?.userId ?? socket.id;
+  socket.on('sendMessage', async (data) => {
+    data.sender = data.sender ?? socket.userId ?? socket.handshake?.auth?.userId ?? socket.id;
 
-        // normalize sender to id string if object
-        if (typeof data.sender === 'object' && data.sender._id) data.sender = data.sender._id;
+    if (typeof data.sender === 'object' && data.sender._id) {
+      data.sender = data.sender._id;
+    }
 
-        console.log('📤 Message received on server:', data);
+    console.log('📤 Message received on server:', data);
 
-        try {
-            const messageDoc = new Message({
-                sender: data.sender,
-                receiver: data.receiver,
-                text: data.text,
-                createdAt: new Date()
-            });
-            await messageDoc.save();
-            // emit saved message where needed...
-        } catch (err) {
-            console.error('Failed to save message', err);
-        }
-    })
+    try {
+      const messageDoc = new Message({
+        sender: data.sender,
+        receiver: data.receiver,
+        text: data.text,
+        createdAt: new Date()
+      });
+      await messageDoc.save();
+    } catch (err) {
+      console.error('Failed to save message', err);
+    }
+  });
 
-    socket.on("disconnect", () => {
-        console.log("Client disconnected: ", socket.id)
-    })
-})
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
+  });
+});
 
 server.listen(port, () => {
-    console.log(`Port is listening on ${port}`)
-})
-
-
-
-
+  console.log(`Port is listening on ${port}`);
+});
