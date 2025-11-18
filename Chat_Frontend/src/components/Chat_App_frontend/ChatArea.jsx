@@ -1,4 +1,3 @@
-// components/ChatArea.jsx
 import React from 'react';
 import { Send, Phone, Video, MoreVertical, Users, Smile, Paperclip, Mic, ArrowLeft } from 'lucide-react';
 
@@ -55,6 +54,36 @@ const MessageBubble = ({ message, currentUserId }) => {
   const senderId = message?.sender?._id ?? message?.sender ?? message?.senderId;
   const isOwn = String(senderId) === String(currentUserId);
 
+  // Decide tick UI
+  const getTickIcon = () => {
+    if (!isOwn) return null;
+
+    if (message.seen) {
+      // Blue double tick (seen)
+      return (
+        <span className="flex items-center text-blue-400 text-sm">
+          ✓✓
+        </span>
+      );
+    }
+
+    if (message.delivered) {
+      // Gray double tick (delivered)
+      return (
+        <span className="flex items-center text-gray-300 text-sm">
+          ✓✓
+        </span>
+      );
+    }
+
+    // Single gray tick (sent)
+    return (
+      <span className="flex items-center text-gray-400 text-sm">
+        ✓
+      </span>
+    );
+  };
+
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} px-1`}>
       <div
@@ -66,6 +95,7 @@ const MessageBubble = ({ message, currentUserId }) => {
       >
         <p className="text-sm break-words">{message.text}</p>
 
+        {/* TIME + TICKS */}
         <p
           className={`text-xs mt-1 flex items-center gap-1 ${
             isOwn ? 'text-blue-200' : 'text-gray-400'
@@ -73,25 +103,19 @@ const MessageBubble = ({ message, currentUserId }) => {
         >
           {/* TIME */}
           {message.createdAt
-            ? new Date(message.createdAt).toLocaleTimeString()
-            : message.time ?? ''}
+            ? new Date(message.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : message.time ?? ""}
 
-          {/* SENT / DELIVERED / SEEN TICKS */}
-          {isOwn && (
-            <span className="ml-1 text-sm">
-              {message.seen
-                ? '✓✓'       // seen
-                : message.delivered
-                ? '✓'        // delivered
-                : ''}        // sent but not delivered
-            </span>
-          )}
+          {/* SEEN / DELIVERED / SENT */}
+          {getTickIcon()}
         </p>
       </div>
     </div>
   );
 };
-
 
 // MessagesArea Component
 const MessagesArea = ({ messages , currentUserId}) => {
