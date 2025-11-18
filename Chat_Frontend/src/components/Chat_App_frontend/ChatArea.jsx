@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Send, Phone, Video, MoreVertical, Users, Smile, Paperclip, Mic, ArrowLeft } from 'lucide-react';
 
 // ChatHeader Component
@@ -54,34 +54,16 @@ const MessageBubble = ({ message, currentUserId }) => {
   const senderId = message?.sender?._id ?? message?.sender ?? message?.senderId;
   const isOwn = String(senderId) === String(currentUserId);
 
-  // Decide tick UI
   const getTickIcon = () => {
     if (!isOwn) return null;
 
     if (message.seen) {
-      // Blue double tick (seen)
-      return (
-        <span className="flex items-center text-blue-400 text-sm">
-          ✓✓
-        </span>
-      );
+      return <span className="flex items-center text-blue-400 text-sm">✓✓</span>;
     }
-
     if (message.delivered) {
-      // Gray double tick (delivered)
-      return (
-        <span className="flex items-center text-gray-300 text-sm">
-          ✓✓
-        </span>
-      );
+      return <span className="flex items-center text-gray-300 text-sm">✓✓</span>;
     }
-
-    // Single gray tick (sent)
-    return (
-      <span className="flex items-center text-gray-400 text-sm">
-        ✓
-      </span>
-    );
+    return <span className="flex items-center text-gray-400 text-sm">✓</span>;
   };
 
   return (
@@ -95,13 +77,11 @@ const MessageBubble = ({ message, currentUserId }) => {
       >
         <p className="text-sm break-words">{message.text}</p>
 
-        {/* TIME + TICKS */}
         <p
           className={`text-xs mt-1 flex items-center gap-1 ${
             isOwn ? 'text-blue-200' : 'text-gray-400'
           }`}
         >
-          {/* TIME */}
           {message.createdAt
             ? new Date(message.createdAt).toLocaleTimeString([], {
                 hour: "2-digit",
@@ -109,7 +89,6 @@ const MessageBubble = ({ message, currentUserId }) => {
               })
             : message.time ?? ""}
 
-          {/* SEEN / DELIVERED / SENT */}
           {getTickIcon()}
         </p>
       </div>
@@ -118,19 +97,28 @@ const MessageBubble = ({ message, currentUserId }) => {
 };
 
 // MessagesArea Component
-const MessagesArea = ({ messages , currentUserId}) => {
+const MessagesArea = ({ messages, currentUserId }) => {
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   return (
     <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4">
       {messages.length === 0 ? (
         <div className="flex items-center justify-center h-full text-gray-500">
-          <p className="text-center">
-            Select a conversation to start messaging
-          </p>
+          <p className="text-center">Select a conversation to start messaging</p>
         </div>
       ) : (
-        messages.map((msg) => (
-          <MessageBubble key={msg._id} message={msg} currentUserId={currentUserId}/>
-        ))
+        <>
+          {messages.map((msg) => (
+            <MessageBubble key={msg._id} message={msg} currentUserId={currentUserId} />
+          ))}
+
+          {/* auto-scroll anchor */}
+          <div ref={bottomRef} />
+        </>
       )}
     </div>
   );
@@ -141,12 +129,10 @@ const MessageInput = ({ message, setMessage, handleSendMessage, handleKeyPress }
   return (
     <div className="p-3 md:p-4 bg-black border-t border-gray-800 flex-shrink-0">
       <div className="flex items-end space-x-2">
-        {/* Attachment button - hidden on very small screens */}
         <button className="hidden sm:block p-2 hover:bg-gray-800 rounded-lg transition-colors">
           <Paperclip size={18} className="text-gray-400 md:w-5 md:h-5" />
         </button>
-        
-        {/* Message input */}
+
         <div className="flex-1 bg-gray-800 rounded-lg border border-gray-700 focus-within:border-blue-500">
           <textarea
             value={message}
@@ -158,20 +144,16 @@ const MessageInput = ({ message, setMessage, handleSendMessage, handleKeyPress }
             style={{ minHeight: '40px', maxHeight: '100px' }}
           />
         </div>
-        
-        {/* Action buttons */}
+
         <div className="flex items-center space-x-1">
-          {/* Emoji button - hidden on small screens */}
           <button className="hidden sm:block p-2 hover:bg-gray-800 rounded-lg transition-colors">
             <Smile size={18} className="text-gray-400 md:w-5 md:h-5" />
           </button>
-          
-          {/* Voice button - hidden on small screens */}
+
           <button className="hidden sm:block p-2 hover:bg-gray-800 rounded-lg transition-colors">
             <Mic size={18} className="text-gray-400 md:w-5 md:h-5" />
           </button>
-          
-          {/* Send button */}
+
           <button
             onClick={handleSendMessage}
             className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
@@ -185,12 +167,12 @@ const MessageInput = ({ message, setMessage, handleSendMessage, handleKeyPress }
 };
 
 // Main ChatArea Component
-const ChatArea = ({ 
-  selectedConversation, 
-  currentMessages, 
-  message, 
-  setMessage, 
-  handleSendMessage, 
+const ChatArea = ({
+  selectedConversation,
+  currentMessages,
+  message,
+  setMessage,
+  handleSendMessage,
   handleKeyPress,
   onBackToSidebar,
   isMobile,
@@ -198,18 +180,15 @@ const ChatArea = ({
 }) => {
   return (
     <div className="h-full flex flex-col bg-gray-900">
-      {/* Chat Header */}
-      <ChatHeader 
-        selectedConversation={selectedConversation} 
+      <ChatHeader
+        selectedConversation={selectedConversation}
         onBackToSidebar={onBackToSidebar}
         isMobile={isMobile}
       />
 
-      {/* Messages Area */}
-      <MessagesArea messages={currentMessages} currentUserId={currentUserId}/>
+      <MessagesArea messages={currentMessages} currentUserId={currentUserId} />
 
-      {/* Message Input */}
-      <MessageInput 
+      <MessageInput
         message={message}
         setMessage={setMessage}
         handleSendMessage={handleSendMessage}
