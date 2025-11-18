@@ -21,7 +21,7 @@ const port = process.env.PORT || 5000
 
 connectDB()
 
-// ✅ FIX CORS FOR COOKIES + RENDER
+// CORS FIX FOR COOKIES + SOCKET.IO
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
@@ -38,7 +38,7 @@ app.use('/api/messages', messageRoutes)
 
 const server = createServer(app)
 
-// ✅ SOCKET.IO WITH SAME CORS FIX
+// SOCKET.IO
 const io = new Server(server, {
   pingTimeout: 60000,
   cors: {
@@ -48,21 +48,35 @@ const io = new Server(server, {
   },
   allowRequest: (req, callback) => {
     console.log("Socket.IO handshake origin:", req.headers.origin);
-    callback(null, true); // allow all for now
+    callback(null, true);
   }
 });
 
-// SOCKET.IO EVENTS
+//SOCKET EVENTS
 io.on("connection", (socket) => {
   console.log("New user connected:", socket.id);
 
-  socket.on("join", (userId) => {
+
+  // 1️ USER JOINS → mark undelivered messages as delivered
+  socket.on("join", async (userId) => {
     socket.join(userId);
+    socket.userId = userId;
+
     console.log(`${socket.id} joined room ${userId}`);
+
+    // Mark all messages delivered when receiver comes online
+    await Message.updateMany(
+      { receiver: userId, delivered: false },
+      { $set: { delivered: true } }
+    );
+
+    // Notify sender(s)
+    io.emit("messagesDelivered", { deliveredTo: userId });
   });
 
+  // 2️ SEND MESSAGE
   socket.on('sendMessage', async (data) => {
-    data.sender = data.sender ?? socket.userId ?? socket.handshake?.auth?.userId ?? socket.id;
+    data.sender = data.sender ?? socket.userId ?? socket.handshake?.auth?.userId;
 
     if (typeof data.sender === 'object' && data.sender._id) {
       data.sender = data.sender._id;
@@ -71,16 +85,35 @@ io.on("connection", (socket) => {
     console.log('📤 Message received on server:', data);
 
     try {
-      const messageDoc = new Message({
+      // Save message
+      const messageDoc = await Message.create({
         sender: data.sender,
         receiver: data.receiver,
         text: data.text,
+        delivered: false,
+        seen: false,
         createdAt: new Date()
       });
-      await messageDoc.save();
+
+      // Immediately emit message to receiver room
+      io.to(data.receiver).emit("receiveMessage", messageDoc);
+
     } catch (err) {
       console.error('Failed to save message', err);
     }
+  });
+
+  // 3️ MARK AS SEEN (when chat is opened)
+  socket.on("markAsSeen", async ({ senderId, receiverId }) => {
+
+    // Update DB
+    await Message.updateMany(
+      { sender: senderId, receiver: receiverId, seen: false },
+      { $set: { seen: true, delivered: true } } // seen implies delivered
+    );
+
+    // Notify the sender their messages were seen
+    io.to(senderId).emit("messagesSeen", { by: receiverId });
   });
 
   socket.on("disconnect", () => {
