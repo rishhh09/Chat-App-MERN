@@ -10,14 +10,14 @@ const Chat_frontend = ({ socket, currentUserId }) => {
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileView, setIsMobileView] = useState(false);
-  const [unseenCounts, setUnseenCounts] = useState({});  
+  const [unseenCounts, setUnseenCounts] = useState({});
 
-  // 1️ FETCH USERS
+  // 1) Fetch all users
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await API.get('/api/user/all');
-        setConversations(response.data.users);
+        const res = await API.get('/api/user/all');
+        setConversations(res.data.users);
       } catch (err) {
         console.error("Failed to fetch users", err);
       }
@@ -25,15 +25,14 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     fetchUsers();
   }, []);
 
-  // 2️ FETCH UNSEEN COUNTS
-
+  // 2) Fetch unseen counts
   const fetchUnseenCounts = async () => {
     if (!currentUserId) return;
     try {
       const res = await API.get(`/api/messages/unseen/${currentUserId}`);
       setUnseenCounts(res.data.unseen || {});
     } catch (err) {
-      console.log("Failed to fetch unseen", err);
+      console.log("Failed to load unseen", err);
     }
   };
 
@@ -41,7 +40,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     fetchUnseenCounts();
   }, [currentUserId]);
 
-  // 3️ FETCH MESSAGES WHEN A CHAT OPENS
+  // 3) Fetch messages when selecting a chat
   useEffect(() => {
     if (!selectedChat) {
       setMessages([]);
@@ -50,20 +49,20 @@ const Chat_frontend = ({ socket, currentUserId }) => {
 
     const fetchMessages = async () => {
       try {
-        const response = await API.get(`/api/messages/${selectedChat}`);
-        const data = Array.isArray(response.data)
-          ? response.data
-          : (response.data.message ?? response.data);
+        const res = await API.get(`/api/messages/${selectedChat}`);
+        const data = Array.isArray(res.data)
+          ? res.data
+          : (res.data.message ?? res.data);
 
         setMessages(data);
 
-        // mark as seen (✓✓)
-        socket.emit("markAsSeen", {
+        // mark these messages as seen
+        socket.emit("markSeen", {
           senderId: selectedChat,
           receiverId: currentUserId,
         });
 
-        // reset unseen count
+        // reset unseen
         setUnseenCounts(prev => ({
           ...prev,
           [selectedChat]: 0
@@ -77,38 +76,47 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     fetchMessages();
   }, [selectedChat]);
 
-  // 4️ SOCKET: RECEIVE MESSAGE
+  // 4) Receive message
   useEffect(() => {
     if (!socket) return;
 
     const handler = (newMessage) => {
       const senderId = newMessage?.sender?._id ?? newMessage.sender;
-
-      // If message belongs to opened chat → append
+      
+      // message for open chat
       if (String(senderId) === String(selectedChat)) {
         setMessages(prev => [...prev, newMessage]);
-      } 
-      else {
-        // If message belongs to another chat → increment unseen
-        setUnseenCounts(prev => ({
-          ...prev,
-          [senderId]: (prev[senderId] || 0) + 1,
-        }));
+
+        // mark as seen instantly
+        socket.emit("markSeen", {
+          senderId,
+          receiverId: currentUserId
+        });
+        return;
       }
+
+      // ignore messages YOU sent
+      if (String(senderId) === String(currentUserId)) return;
+
+      // increment unread count
+      setUnseenCounts(prev => ({
+        ...prev,
+        [senderId]: (prev[senderId] || 0) + 1,
+      }));
     };
 
     socket.on("receiveMessage", handler);
     return () => socket.off("receiveMessage", handler);
   }, [selectedChat, socket]);
 
-  // 5️ SOCKET: MESSAGE DELIVERED (✓)
+  // 5) Delivered events
   useEffect(() => {
     if (!socket) return;
 
-    const handler = ({ deliveredTo }) => {
+    const handler = (msg) => {
       setMessages(prev =>
-        prev.map(msg =>
-          msg.receiver === deliveredTo ? { ...msg, delivered: true } : msg
+        prev.map(m =>
+          m._id === msg._id ? { ...m, delivered: true } : m
         )
       );
     };
@@ -117,14 +125,14 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     return () => socket.off("messagesDelivered", handler);
   }, [socket]);
 
-  // 6️ SOCKET: MESSAGE SEEN (✓✓)
+  // 6) Seen events
   useEffect(() => {
     if (!socket) return;
 
-    const handler = ({ by }) => {
+    const handler = (msg) => {
       setMessages(prev =>
-        prev.map(msg =>
-          msg.receiver === by ? { ...msg, seen: true, delivered: true } : msg
+        prev.map(m =>
+          m._id === msg._id ? { ...m, delivered: true, seen: true } : m
         )
       );
     };
@@ -133,11 +141,9 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     return () => socket.off("messagesSeen", handler);
   }, [socket]);
 
-  // 7️ SEND MESSAGE
+  // 7) Send message
   const handleSendMessage = () => {
-    if (!selectedChat) return;
-    if (!currentUserId) return;
-    if (!message.trim()) return;
+    if (!selectedChat || !currentUserId || !message.trim()) return;
 
     const payload = {
       sender: currentUserId,
@@ -147,8 +153,8 @@ const Chat_frontend = ({ socket, currentUserId }) => {
 
     socket.emit("sendMessage", payload);
 
-    // add optimistic message with ✓ state pending
-    const localMsg = {
+    // optimistic message
+    const tempMsg = {
       _id: Date.now().toString(),
       sender: { _id: currentUserId },
       receiver: selectedChat,
@@ -158,7 +164,7 @@ const Chat_frontend = ({ socket, currentUserId }) => {
       seen: false
     };
 
-    setMessages(prev => [...prev, localMsg]);
+    setMessages(prev => [...prev, tempMsg]);
     setMessage('');
   };
 
@@ -169,26 +175,26 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     }
   };
 
-  // 8️ SOCKET JOIN
+  // 8) Join socket room
   useEffect(() => {
     if (!socket) return;
 
-    const emitJoin = () => {
-      if (currentUserId) socket.emit('join', currentUserId);
+    const join = () => {
+      if (currentUserId) socket.emit("join", currentUserId);
     };
 
-    if (socket.connected) emitJoin();
+    if (socket.connected) join();
 
-    socket.on('connect', emitJoin);
-    socket.on('reconnect', emitJoin);
+    socket.on("connect", join);
+    socket.on("reconnect", join);
 
     return () => {
-      socket.off('connect', emitJoin);
-      socket.off('reconnect', emitJoin);
+      socket.off("connect", join);
+      socket.off("reconnect", join);
     };
   }, [socket, currentUserId]);
 
-  // MOBILE HANDLERS
+  // mobile
   const handleChatSelect = (chatId) => {
     setSelectedChat(chatId);
     setIsMobileView(true);
@@ -198,27 +204,25 @@ const Chat_frontend = ({ socket, currentUserId }) => {
     setIsMobileView(false);
   };
 
-  const selectedConversation = conversations.find(
-    conv => conv._id === selectedChat
-  );
+  const selectedConversation = conversations.find(c => c._id === selectedChat);
 
   return (
     <div className="flex h-screen bg-gray-900 text-white overflow-hidden">
-
+      
       {/* Sidebar */}
-      <div className={`${isMobileView ? 'hidden' : 'block'} md:block w-full md:w-80 lg:w-96 xl:w-80`}>
+      <div className={`${isMobileView ? "hidden" : "block"} md:block w-full md:w-80`}>
         <Sidebar
           conversations={conversations}
           selectedChat={selectedChat}
           setSelectedChat={handleChatSelect}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
-          unseenCounts={unseenCounts}    
+          unseenCounts={unseenCounts}
         />
       </div>
 
       {/* Chat Area */}
-      <div className={`${!isMobileView ? 'hidden' : 'block'} md:block flex-1 min-w-0`}>
+      <div className={`${!isMobileView ? "hidden" : "block"} md:block flex-1`}>
         {selectedConversation ? (
           <ChatArea
             selectedConversation={selectedConversation}
