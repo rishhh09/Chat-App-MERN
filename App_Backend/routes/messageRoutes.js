@@ -41,6 +41,36 @@ router.get('/unseen/:receiverId', validateToken, async (req, res) => {
   }
 });
 
+// GET CHAT USERS (WITH YOU CHATTED BEFORE)
+router.get('/chat-users/:userId', validateToken, async(req, res)=> {
+  userId = req.params.userId;
+  const users = await Message.Aggregate([
+    try{
+      {
+        $match: {
+          $or: [{sender: userId}, {receiver: userId}];
+        }
+      },
+      {
+        $project: {
+          user: {
+            $cond: [{
+              $eq: ['$sender': userId],
+              '$receiver',
+              '$sender'
+            }];
+          }
+        }
+      },
+      {$gruop: {'_id': user}}
+    ]);
+  
+    res.json({users: users.map(u => u._id)});
+}catch(err){
+    res.status(500).json({message: `Error fetching chat users`});
+}
+});
+
 // GET CHAT MESSAGES
 router.get('/:userId', validateToken, receiveMessage);
 
